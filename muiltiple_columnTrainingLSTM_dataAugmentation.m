@@ -52,9 +52,10 @@ YVal={};  %
 
 ee=1; % Index de les columnes que processo
 
-number_columns=10;
-synthetic_data=2;
-column_index=099.12; 
+number_columns=3;
+synthetic_data=0;
+column_index=0; 
+aggregated_columns=1; %Bigger than 0
 
 %% Prepara dades per Train
 % Per cada imatge d'entrenament
@@ -66,13 +67,53 @@ for jj=1:floor(N_imatges_train)  % Nombre d'imatges de train que agafo per entre
     y=I_trainT.xy_{jj}(2,:);
     Co=floor(length(x)/number_columns);
 
-    for i=(2+column_index*Co):(Co + column_index*Co)
+    for i=(2+column_index*Co):aggregated_columns:(Co + column_index*Co)
     
-        s=zeros(R,3);
+        s=zeros(R,3*aggregated_columns);
         c=zeros(R,1);
         
-        % Colunma de color de la matriu
-        s(:,1)=I(:,x(i),1);  s(:,2)=I(:,x(i),2); s(:,3)=I(:,x(i),3);
+        rgb_index=1;
+        
+        shoreline_index = 0;
+            
+        fprintf('Aggregating columns\n')
+        
+        for ii=i:(i+aggregated_columns - 1)
+            
+            if (ii > (Co + column_index*Co))
+                
+                % Duplicate last column
+
+                fprintf('Duplicating column number %d\n', (Co + column_index*Co));
+
+                % Colunma de color de la matriu
+                s(:,rgb_index)=I(:,x(Co + column_index*Co),1);  
+                s(:,rgb_index + 1)=I(:,x(Co + column_index*Co),2); 
+                s(:,rgb_index + 2)=I(:,x(Co + column_index*Co),3);
+
+                rgb_index = rgb_index + 3;
+
+                shoreline_index = shoreline_index + y(Co + column_index*Co);
+                
+            else 
+
+                fprintf('Aggregating column number %d\n', ii);
+
+                % Colunma de color de la matriu
+                s(:,rgb_index)=I(:,x(ii),1);  
+                s(:,rgb_index + 1)=I(:,x(ii),2); 
+                s(:,rgb_index + 2)=I(:,x(ii),3);
+
+                rgb_index = rgb_index + 3;
+
+                shoreline_index = shoreline_index + y(ii);
+                
+            end
+            
+        end
+        
+        % average shoreline index
+        shoreline_index = round(shoreline_index/aggregated_columns);
         
         % Vector de classes
         c(round(y(i)))=1;
@@ -164,13 +205,50 @@ for jj=1:N_imatges_test  % Nombre d'imatges de train que agafo per entrenar la x
     y=I_testT.xy_{jj}(2,:);
     Co=floor(length(x)/number_columns);
 
-    for i=(2+column_index*Co):(Co + column_index*Co)
-    
-        s=zeros(R,3);
+    for i=(2+column_index*Co):aggregated_columns:(Co + column_index*Co)
+        
+        s=zeros(R,3*aggregated_columns);
         c=zeros(R,1);
         
-        % Colunma de color de la matriu
-        s(:,1)=I(:,x(i),1);  s(:,2)=I(:,x(i),2); s(:,3)=I(:,x(i),3);
+        rgb_index=1;
+        
+        shoreline_index = 0;
+        
+        for ii=i:(i+aggregated_columns - 1)
+            
+            if (ii > (Co + column_index*Co))
+                
+                % Duplicate last column
+
+                fprintf('Duplicating column number %d\n', (Co + column_index*Co));
+
+                % Colunma de color de la matriu
+                s(:,rgb_index)=I(:,x(Co + column_index*Co),1);  
+                s(:,rgb_index + 1)=I(:,x(Co + column_index*Co),2); 
+                s(:,rgb_index + 2)=I(:,x(Co + column_index*Co),3);
+
+                rgb_index = rgb_index + 3;
+
+                shoreline_index = shoreline_index + y(Co + column_index*Co);
+                
+            else 
+            
+                fprintf('Aggregating column number %d\n', ii);
+
+                % Colunma de color de la matriu
+                s(:,rgb_index)=I(:,x(ii),1);  
+                s(:,rgb_index + 1)=I(:,x(ii),2); 
+                s(:,rgb_index + 2)=I(:,x(ii),3);
+
+                rgb_index = rgb_index + 3;
+
+                shoreline_index = shoreline_index + y(ii);
+            end
+            
+        end
+        
+        % average shoreline index
+        shoreline_index = round(shoreline_index/aggregated_columns);
         
         % Vector de classes
         c(round(y(i)))=1;
@@ -194,13 +272,51 @@ for jj=1:N_imatges_val  % Nombre d'imatges de train que agafo per entrenar la xa
     y=I_valT.xy_{jj}(2,:);
     Co=floor(length(x)/number_columns);
 
-    for i=(2+column_index*Co):(Co + column_index*Co)
+    for i=(2+column_index*Co):aggregated_columns:(Co + column_index*Co)
     
-        s=zeros(R,3);
+        s=zeros(R,3*aggregated_columns);
         c=zeros(R,1);
         
-        % Colunma de color de la matriu
-        s(:,1)=I(:,x(i),1);  s(:,2)=I(:,x(i),2); s(:,3)=I(:,x(i),3);
+        rgb_index=1;
+        
+        shoreline_index = 0;
+        
+        for ii=i:(i+aggregated_columns - 1)
+            
+            if (ii > (Co + column_index*Co))
+                
+                % Duplicate last column
+
+                fprintf('Duplicating column number %d\n', (Co + column_index*Co));
+
+                % Colunma de color de la matriu
+                s(:,rgb_index)=I(:,x(Co + column_index*Co),1);  
+                s(:,rgb_index + 1)=I(:,x(Co + column_index*Co),2); 
+                s(:,rgb_index + 2)=I(:,x(Co + column_index*Co),3);
+
+                rgb_index = rgb_index + 3;
+
+                shoreline_index = shoreline_index + y(Co + column_index*Co);
+                
+            else 
+            
+                fprintf('Aggregating column number %d\n', ii);
+
+                % Colunma de color de la matriu
+                s(:, rgb_index)=I(:,x(ii),1);  
+                s(:, rgb_index + 1)=I(:,x(ii),2); 
+                s(:, rgb_index + 2)=I(:,x(ii),3);
+
+                rgb_index = rgb_index + 3;
+
+                shoreline_index = shoreline_index + y(ii);
+            
+            end
+            
+        end
+        
+        % average shoreline index
+        shoreline_index = round(shoreline_index/aggregated_columns);
         
         % Vector de classes
         c(round(y(i)))=1;
@@ -231,7 +347,7 @@ YVal=YVal';
 %% Configuració de la xarxa i entrenament
 
 % lstm
-numFeatures=3;
+numFeatures=3*aggregated_columns;
 numHiddenUnits=30;   % 60 sembla millor que 30 
 numClasses=3;
 miniBatchSize=20;
@@ -239,7 +355,7 @@ miniBatchSize=20;
 layers=[ sequenceInputLayer(numFeatures)
                % lstmLayer(numHiddenUnits,'OutputMode','sequence')
                bilstmLayer(numHiddenUnits,'OutputMode','sequence')
-               fullyConnectedLayer(numClasses)
+               fullyConnectedLayer(3)
                softmaxLayer
                classificationLayer ];
            
