@@ -55,7 +55,7 @@ ee=1; % Index de les columnes que processo
 number_columns=3;
 synthetic_data=0;
 column_index=0; 
-aggregated_columns=1; %Bigger than 0
+aggregated_columns=2; %Bigger than 0
 
 %% Prepara dades per Train
 % Per cada imatge d'entrenament
@@ -116,8 +116,8 @@ for jj=1:floor(N_imatges_train)  % Nombre d'imatges de train que agafo per entre
         shoreline_index = round(shoreline_index/aggregated_columns);
         
         % Vector de classes
-        c(round(y(i)))=1;
-        c(round(y(i))+1:end)=-1;
+        c(round(shoreline_index))=1;
+        c(round(shoreline_index)+1:end)=-1;
         c_categorized=categorical(c, [0 1 -1], {'terra'  'linia_de_costa' 'mar'});
         
         X{ee}=s';
@@ -141,17 +141,56 @@ if synthetic_data > 0
             y=I_trainT.xy_{jj}(2,:);
             Co=floor(length(x)/number_columns);
             
-            for i=(2+column_index*Co):(Co + column_index*Co)
-
-                s=zeros(R,3);
+            for i=(2+column_index*Co):aggregated_columns:(Co + column_index*Co)
+    
+                s=zeros(R,3*aggregated_columns);
                 c=zeros(R,1);
 
-                % Colunma de color de la matriu
-                s(:,1)=I(:,x(i),1);  s(:,2)=I(:,x(i),2); s(:,3)=I(:,x(i),3);
+                rgb_index=1;
 
+                shoreline_index = 0;
+
+                fprintf('Aggregating columns\n')
+
+                for ii=i:(i+aggregated_columns - 1)
+
+                    if (ii > (Co + column_index*Co))
+
+                        % Duplicate last column
+
+                        fprintf('Duplicating column number %d\n', (Co + column_index*Co));
+
+                        % Colunma de color de la matriu
+                        s(:,rgb_index)=I(:,x(Co + column_index*Co),1);  
+                        s(:,rgb_index + 1)=I(:,x(Co + column_index*Co),2); 
+                        s(:,rgb_index + 2)=I(:,x(Co + column_index*Co),3);
+
+                        rgb_index = rgb_index + 3;
+
+                        shoreline_index = shoreline_index + y(Co + column_index*Co);
+
+                    else 
+
+                        fprintf('Aggregating column number %d\n', ii);
+
+                        % Colunma de color de la matriu
+                        s(:,rgb_index)=I(:,x(ii),1);  
+                        s(:,rgb_index + 1)=I(:,x(ii),2); 
+                        s(:,rgb_index + 2)=I(:,x(ii),3);
+
+                        rgb_index = rgb_index + 3;
+
+                        shoreline_index = shoreline_index + y(ii);
+
+                    end
+
+                end
+
+                % average shoreline index
+                shoreline_index = round(shoreline_index/aggregated_columns);
                 % Vector de classes
-                c(round(y(i)))=1;
-                c(round(y(i))+1:end)=-1;
+                c(round(shoreline_index))=1;
+                c(round(shoreline_index)+1:end)=-1;
                 c_categorized=categorical(c, [0 1 -1], {'terra'  'linia_de_costa' 'mar'});
 
 
@@ -173,18 +212,13 @@ if synthetic_data > 0
 
                 c__displaced_categorized=categorical(c_displaced, [0 1 -1], {'terra'  'linia_de_costa' 'mar'});
 
-                %RGB displacement
-                s_displaced(1:R - displacement, 1)=s(displacement + 1:end, 1);
-                s_displaced(R - displacement +1:end, 1)=s_displaced(R - displacement, 1);
-
-                %RGB displacement
-                s_displaced(1:R - displacement, 2)=s(displacement + 1:end, 2);
-                s_displaced(R - displacement +1:end, 2)=s_displaced(R - displacement, 2);
-
-                %RGB displacement
-                s_displaced(1:R - displacement, 3)=s(displacement + 1:end, 3);
-                s_displaced(R - displacement +1:end, 3)=s_displaced(R - displacement, 3);
-
+                for rgb_index_displaced=1:3*aggregated_columns
+                
+                    %RGB displacement
+                    s_displaced(1:R - displacement, rgb_index_displaced)=s(displacement + 1:end, rgb_index_displaced);
+                    s_displaced(R - displacement +1:end, rgb_index_displaced)=s_displaced(R - displacement, rgb_index_displaced);
+                end 
+                
                 X{ee}=s_displaced';
                 Y{ee}=c__displaced_categorized';
 
@@ -251,8 +285,8 @@ for jj=1:N_imatges_test  % Nombre d'imatges de train que agafo per entrenar la x
         shoreline_index = round(shoreline_index/aggregated_columns);
         
         % Vector de classes
-        c(round(y(i)))=1;
-        c(round(y(i))+1:end)=-1;
+        c(round(shoreline_index))=1;
+        c(round(shoreline_index)+1:end)=-1;
         c=categorical(c, [0 1 -1], {'terra'  'linia_de_costa' 'mar'});
         
         XTest{ee}=s';
@@ -319,8 +353,8 @@ for jj=1:N_imatges_val  % Nombre d'imatges de train que agafo per entrenar la xa
         shoreline_index = round(shoreline_index/aggregated_columns);
         
         % Vector de classes
-        c(round(y(i)))=1;
-        c(round(y(i))+1:end)=-1;
+        c(round(shoreline_index))=1;
+        c(round(shoreline_index)+1:end)=-1;
         c=categorical(c, [0 1 -1], {'terra'  'linia_de_costa' 'mar'});
         
         XVal{ee}=s';
