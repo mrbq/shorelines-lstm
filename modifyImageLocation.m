@@ -1,7 +1,7 @@
 %Replace folder location of images in .mat file
 clear all; close all; clc;
 
-shorelines_pictures = "C:\Users\marco\Master\TFM\shorelines\";
+shorelines_pictures = "C:\Users\marco\Master\shorelines-lstm\shorelines\";
 last_char="/";
 
 load('LiniesCostaPlatjaLLarga.mat','T');
