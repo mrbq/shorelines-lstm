@@ -52,7 +52,7 @@ YVal={};  %
 
 ee=1; % Index de les columnes que processo
 
-number_columns=3;
+number_columns=1;
 synthetic_data=0;
 column_index=0; 
 aggregated_columns=2; %Bigger than 0
@@ -457,3 +457,84 @@ save('PrimerExperiment2_column.mat')
 % load('PrimerExperiment.mat','net','X', 'Y', 'XTest','YTest',
 % 'XVal','YVal','YPred','options','numFeatures','numHiddenUnits')
 
+for jj=1:N_imatges_test  % Nombre d'imatges de train que agafo per entrenar la xarxa
+    
+    XTest2={};
+    ee=1;
+    I=imread(I_testT.File{jj});
+    x=I_testT.xy_{jj}(1,:);
+    y=I_testT.xy_{jj}(2,:);
+    Co=floor(length(x)/1);
+
+    for i=2:aggregated_columns:Co
+        
+        s=zeros(R,3*aggregated_columns);
+        c=zeros(R,1);
+        
+        rgb_index=1;
+        
+        shoreline_index = 0;
+        
+        for ii=i:(i+aggregated_columns - 1)
+            
+            if (ii > Co)
+                
+                % Duplicate last column
+
+                fprintf('Duplicating column number %d\n', (Co));
+
+                % Colunma de color de la matriu
+                s(:,rgb_index)=I(:,x(Co),1);  
+                s(:,rgb_index + 1)=I(:,x(Co),2); 
+                s(:,rgb_index + 2)=I(:,x(Co),3);
+
+                rgb_index = rgb_index + 3;
+
+                shoreline_index = shoreline_index + y(Co);
+                
+            else 
+            
+                fprintf('Aggregating column number %d\n', ii);
+
+                % Colunma de color de la matriu
+                s(:,rgb_index)=I(:,x(ii),1);  
+                s(:,rgb_index + 1)=I(:,x(ii),2); 
+                s(:,rgb_index + 2)=I(:,x(ii),3);
+
+                rgb_index = rgb_index + 3;
+
+                shoreline_index = shoreline_index + y(ii);
+            end
+            
+        end
+        
+        % average shoreline index
+        shoreline_index = round(shoreline_index/aggregated_columns);
+        
+        % Vector de classes
+        c(round(shoreline_index))=1;
+        c(round(shoreline_index)+1:end)=-1;
+        c=categorical(c, [0 1 -1], {'terra'  'linia_de_costa' 'mar'});
+        
+        XTest2{ee}=s';
+
+        ee=ee+1;
+    end
+        
+    YPred2=classify(net,XTest2);
+    YPred_parsed=zeros(length(YPred2));
+
+    for index=1:length(YPred2)
+
+        YPred_parsed(index)= length(find(grp2idx(YPred2{index}) == 1));
+
+    end
+
+    figure
+    imshow(I);
+    hold on
+    plot(I_testT.xy_{jj}(1,:),I_testT.xy_{jj}(2,:),'r');
+    plot(1:aggregated_columns:(length(YPred_parsed)*aggregated_columns),YPred_parsed,'g');
+    pause(0.5)
+            
+end
