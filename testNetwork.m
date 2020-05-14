@@ -6,9 +6,9 @@ close all;
 
 load('LiniesCostaPlatjaLLarga_marcos.mat','T')
 
-load('lstm_net_left_2020_5_13_1.mat','net');
+load('lstm_net_left_2020_5_14_4.mat','net');
 
-a=21;
+a=31;
 I=imread(T.File{a});
 x=T.xy_{a}(1,:);
 y=T.xy_{a}(2,:);

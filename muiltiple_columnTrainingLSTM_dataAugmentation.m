@@ -2,7 +2,7 @@
 % Entreno una LSTM a partir de línies de la imatge.
 
 clear all; close all; clc;
-load('LiniesCostaPlatjaLLarga_marcos.mat','T')
+load('input\shorelines_CFA1_categorized.mat','T')
 
 Num_Imatges=numel(T.File);
 
@@ -30,9 +30,34 @@ N_imatges_train=idx;
 N_imatges_test=floor((Num_Imatges-idx)/2);
 N_imatges_val=Num_Imatges-N_imatges_train-N_imatges_test;
 
-I_trainT = T(shuffledIdx(1:idx),:);
-I_testT = T(shuffledIdx(idx+1:idx+N_imatges_test),:);
-I_valT = T(shuffledIdx(idx+N_imatges_test+1:end),:);
+
+
+index_train=[];
+index_test=[];
+index_val=[];
+
+for i=1:Num_Imatges
+   
+    image_category = char(T.category(i));
+    
+    if strcmp(image_category , 'train')
+        index_train(length(index_train) + 1) = i;
+        
+    elseif strcmp(image_category, 'test')
+        
+        index_test(length(index_test) + 1) = i;
+    
+    elseif strcmp(image_category, 'val')
+    
+        index_val(length(index_val) + 1) = i;
+    
+    end
+    
+end
+
+I_trainT = T(index_train,:);
+I_testT = T(index_test,:);
+I_valT = T(index_val,:);
 
 % Prepara les dades i fas les etiquetes per entrenar
 
@@ -52,10 +77,20 @@ YVal={};  %
 
 ee=1; % Index de les columnes que processo
 
-number_columns=1;
-synthetic_data=0;
-column_index=0; 
-aggregated_columns=2; %Bigger than 0
+number_columns=10;
+synthetic_data=0; % 1 duplicates input set, 2 triplicates, etc
+column_index=0; % from 0:number_columns-1
+aggregated_columns=1; %Bigger than 0
+
+%Create output directory
+now=clock;
+
+foldername = sprintf('lstm_columns_%d_synthetic_%d_column_index_%d_aggregated_columns_%d_%d_%d_%d_%d', number_columns, synthetic_data,column_index,aggregated_columns, now(1),now(2),now(3),now(4))
+ 
+foldername = ['output\shorelines_CFA1_categorized\' foldername]
+
+mkdir(foldername);
+
 
 %% Prepara dades per Train
 % Per cada imatge d'entrenament
@@ -407,13 +442,22 @@ new_Train='si';
 
 if strcmp(new_Train,'si')
     tic
-    net=trainNetwork(X,Y,layers,options);
+    [net info] =trainNetwork(X,Y,layers,options);
     toc
     
     c=clock;
-    nom2=['lstm_net_left' '_' num2str(c(1)) '_' num2str(c(2)) '_' num2str(c(3)) '_' num2str(c(4)) '.mat' ];
+    
+    nom2=['lstm_net_' '_' num2str(c(1)) '_' num2str(c(2)) '_' num2str(c(3)) '_' num2str(c(4)) '.mat' ];
+    nom2=[foldername '\' nom2];
+    
     save(nom2,'net','layers','options','numHiddenUnits','numFeatures','numClasses')
     
+    save([foldername '\train_result.mat'], '-struct', 'info')
+    training_progress = findall(groot, 'Type', 'Figure');
+    saveas(training_progress, [foldername '\train_process.jpg']);
+    pause(2);
+    close(training_progress);
+
 end
 
 
@@ -452,7 +496,7 @@ YPred=classify(net,XTest, ...
     'SequenceLength','longest');
 
 %% Graba resultats per intrpretar
-save('PrimerExperiment2_column.mat')
+save([foldername '\' 'workspace_variables.mat'])
 
 % load('PrimerExperiment.mat','net','X', 'Y', 'XTest','YTest',
 % 'XVal','YVal','YPred','options','numFeatures','numHiddenUnits')
@@ -522,7 +566,7 @@ for jj=1:N_imatges_test  % Nombre d'imatges de train que agafo per entrenar la x
     end
         
     YPred2=classify(net,XTest2);
-    YPred_parsed=zeros(length(YPred2));
+    YPred_parsed=zeros(length(YPred2), 1);
 
     for index=1:length(YPred2)
 
@@ -530,11 +574,29 @@ for jj=1:N_imatges_test  % Nombre d'imatges de train que agafo per entrenar la x
 
     end
 
+    image_file = char(I_testT.File{jj});
+    indexes = find(image_file == '\');
+    lastIndex = indexes(size(indexes,2));
+    image_file_name =image_file(lastIndex+1:end);
+    
     figure
     imshow(I);
     hold on
     plot(I_testT.xy_{jj}(1,:),I_testT.xy_{jj}(2,:),'r');
     plot(1:aggregated_columns:(length(YPred_parsed)*aggregated_columns),YPred_parsed,'g');
+    title(image_file_name);
+    legend('Shoreline' , 'Predicted Shoreline');
     pause(0.5)
-            
+    saveas(gcf, [foldername '\' image_file_name '_predicted.png']);
+    
+    figure
+    plot(T.xy_{jj}(2,:));
+    title(image_file_name);
+    hold on
+    grid on
+    plot(YPred_parsed','r');
+    legend('Shoreline' , 'Predicted Shoreline');
+    saveas(gcf, [foldername '\' image_file_name '_expected_vs_predicted.png']);
+
+    save([foldername '\' image_file_name '_predicted.mat'], 'YPred2','YPred_parsed');
 end
